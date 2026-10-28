@@ -1,0 +1,1664 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>sadape.bank</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
+
+    body {
+      background: linear-gradient(145deg, #0b0f1c 0%, #1a1f33 100%);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 16px;
+      overflow: hidden;
+    }
+
+    .screen {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 16px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.4s ease;
+      z-index: 1;
+    }
+    .screen.active { opacity: 1; pointer-events: all; z-index: 10; }
+
+    /* ========== АВТОРИЗАЦИЯ ========== */
+    .auth-container {
+      width: 100%;
+      max-width: 420px;
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-radius: 40px;
+      padding: 36px 24px 30px;
+      box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .auth-logo {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-bottom: 28px;
+    }
+
+    .auth-logo-icon {
+      width: 64px;
+      height: 64px;
+      background: linear-gradient(135deg, #6a8cff, #3d5eff);
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 32px;
+      margin-bottom: 14px;
+      box-shadow: 0 12px 28px rgba(61, 94, 255, 0.4);
+    }
+
+    .auth-title { color: #fff; font-size: 26px; font-weight: 800; letter-spacing: -0.8px; }
+    .auth-subtitle { color: rgba(255, 255, 255, 0.5); font-size: 13px; margin-top: 4px; font-weight: 500; }
+
+    .auth-tabs {
+      display: flex;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 16px;
+      padding: 5px;
+      margin-bottom: 22px;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .auth-tab {
+      flex: 1;
+      padding: 11px;
+      text-align: center;
+      color: rgba(255, 255, 255, 0.55);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      border-radius: 12px;
+      transition: all 0.25s ease;
+      user-select: none;
+    }
+    .auth-tab.active {
+      background: linear-gradient(135deg, #6a8cff, #3d5eff);
+      color: white;
+      box-shadow: 0 6px 16px rgba(61, 94, 255, 0.35);
+    }
+
+    .auth-form { display: none; }
+    .auth-form.active { display: block; }
+
+    .field-group { margin-bottom: 14px; }
+    .field-label {
+      display: block;
+      color: rgba(255, 255, 255, 0.55);
+      font-size: 12px;
+      font-weight: 600;
+      margin-bottom: 7px;
+      padding-left: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .field-input {
+      width: 100%;
+      background: rgba(255, 255, 255, 0.07);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 15px;
+      padding: 14px 16px;
+      color: white;
+      font-size: 15px;
+      font-weight: 500;
+      outline: none;
+      transition: all 0.2s ease;
+    }
+    .field-input:focus {
+      border-color: #6a8cff;
+      background: rgba(255, 255, 255, 0.1);
+      box-shadow: 0 0 0 3px rgba(106, 140, 255, 0.2);
+    }
+    .field-input::placeholder { color: rgba(255, 255, 255, 0.3); }
+
+    .btn-primary {
+      width: 100%;
+      background: linear-gradient(135deg, #6a8cff, #3d5eff);
+      border: none;
+      border-radius: 15px;
+      padding: 16px;
+      color: white;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      margin-top: 8px;
+      box-shadow: 0 8px 20px rgba(61, 94, 255, 0.35);
+    }
+    .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 12px 24px rgba(61, 94, 255, 0.45); }
+    .btn-primary:active { transform: translateY(0); }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    .btn-secondary {
+      width: 100%;
+      background: rgba(255, 255, 255, 0.07);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 15px;
+      padding: 15px;
+      color: rgba(255, 255, 255, 0.9);
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      margin-top: 10px;
+    }
+    .btn-secondary:hover { background: rgba(255, 255, 255, 0.12); }
+
+    .btn-danger {
+      width: 100%;
+      background: rgba(255, 59, 48, 0.12);
+      border: 1px solid rgba(255, 59, 48, 0.25);
+      border-radius: 15px;
+      padding: 15px;
+      color: #ff6b5e;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      margin-top: 10px;
+    }
+    .btn-danger:hover { background: rgba(255, 59, 48, 0.2); }
+
+    .msg {
+      margin-top: 14px;
+      padding: 12px 16px;
+      border-radius: 13px;
+      font-size: 13.5px;
+      font-weight: 500;
+      display: none;
+      animation: slideIn 0.3s ease;
+    }
+    .msg.show { display: block; }
+    .msg.success { background: rgba(76, 217, 100, 0.15); color: #4cd964; border: 1px solid rgba(76, 217, 100, 0.25); }
+    .msg.error { background: rgba(255, 59, 48, 0.15); color: #ff6b5e; border: 1px solid rgba(255, 59, 48, 0.25); }
+    .msg.info { background: rgba(106, 140, 255, 0.15); color: #8fa8ff; border: 1px solid rgba(106, 140, 255, 0.25); }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(-8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ========== ГЛАВНЫЙ ЭКРАН ========== */
+    .bank-app {
+      width: 100%;
+      max-width: 420px;
+      max-height: calc(100vh - 32px);
+      overflow-y: auto;
+      overflow-x: hidden;
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-radius: 40px;
+      padding: 22px 20px 26px;
+      box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .bank-app::-webkit-scrollbar { width: 0; }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding: 0 4px;
+    }
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 800;
+      font-size: 19px;
+      letter-spacing: -0.5px;
+      color: #ffffff;
+    }
+    .logo-icon {
+      width: 32px;
+      height: 32px;
+      background: linear-gradient(135deg, #6a8cff, #3d5eff);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      box-shadow: 0 8px 16px rgba(61, 94, 255, 0.35);
+    }
+    .logo-text span { color: #6a8cff; }
+
+    .header-actions { display: flex; gap: 8px; }
+
+    .icon-btn {
+      width: 38px;
+      height: 38px;
+      background: rgba(255, 255, 255, 0.07);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: rgba(255, 255, 255, 0.85);
+      font-size: 16px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      position: relative;
+    }
+    .icon-btn:hover { background: rgba(255, 255, 255, 0.14); transform: translateY(-1px); }
+    .icon-btn.admin {
+      background: linear-gradient(135deg, #ff9500, #ff6b00);
+      box-shadow: 0 6px 16px rgba(255, 107, 0, 0.4);
+    }
+
+    .admin-badge {
+      position: absolute;
+      top: -4px;
+      right: -4px;
+      background: #ff3b30;
+      color: white;
+      font-size: 9px;
+      font-weight: 800;
+      padding: 2px 5px;
+      border-radius: 6px;
+      border: 2px solid #1a1f33;
+    }
+
+    /* Карта */
+    .bank-card {
+      background: linear-gradient(135deg, #1e2640 0%, #2a3455 100%);
+      border-radius: 24px;
+      padding: 22px 20px 18px;
+      color: white;
+      box-shadow: 0 20px 30px -10px rgba(0, 0, 0, 0.7), inset 0 1px 1px rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      position: relative;
+      overflow: hidden;
+      margin-bottom: 18px;
+    }
+    .bank-card.admin-card {
+      background: linear-gradient(135deg, #3a2600 0%, #5a3a00 100%);
+      border: 1px solid rgba(255, 165, 0, 0.3);
+    }
+    .bank-card::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -20%;
+      width: 200px;
+      height: 200px;
+      background: radial-gradient(circle, rgba(106, 140, 255, 0.25) 0%, transparent 70%);
+      border-radius: 50%;
+    }
+    .bank-card.admin-card::before {
+      background: radial-gradient(circle, rgba(255, 165, 0, 0.35) 0%, transparent 70%);
+    }
+    .card-chip {
+      width: 40px;
+      height: 30px;
+      background: linear-gradient(135deg, #d4af37, #f7e05e);
+      border-radius: 8px;
+      margin-bottom: 18px;
+      position: relative;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    }
+    .card-chip::after {
+      content: '';
+      position: absolute;
+      top: 6px; left: 6px; right: 6px; bottom: 6px;
+      border: 1px solid rgba(0,0,0,0.2);
+      border-radius: 4px;
+    }
+    .card-number {
+      font-size: 24px;
+      font-weight: 600;
+      letter-spacing: 3px;
+      margin-bottom: 14px;
+      font-family: 'Courier New', monospace;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+      color: #ffffff;
+      position: relative;
+      z-index: 1;
+    }
+    .card-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      position: relative;
+      z-index: 1;
+    }
+    .card-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      opacity: 0.6;
+      margin-bottom: 2px;
+    }
+    .card-holder { font-size: 14px; font-weight: 500; color: rgba(255,255,255,0.9); }
+    .balance-container { text-align: right; }
+    .balance-amount { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; color: #ffffff; }
+
+    /* Перевод */
+    .transfer-section {
+      background: rgba(255, 255, 255, 0.03);
+      border-radius: 22px;
+      padding: 18px 16px;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+    .section-title {
+      color: rgba(255, 255, 255, 0.9);
+      font-size: 15px;
+      font-weight: 700;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .input-group { margin-bottom: 12px; }
+    .input-label {
+      display: block;
+      color: rgba(255, 255, 255, 0.5);
+      font-size: 12px;
+      font-weight: 600;
+      margin-bottom: 6px;
+      padding-left: 4px;
+    }
+    .input-field {
+      width: 100%;
+      background: rgba(255, 255, 255, 0.07);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 14px;
+      padding: 13px 15px;
+      color: white;
+      font-size: 15px;
+      font-weight: 500;
+      outline: none;
+      transition: all 0.2s ease;
+    }
+    .input-field:focus {
+      border-color: #6a8cff;
+      background: rgba(255, 255, 255, 0.1);
+      box-shadow: 0 0 0 3px rgba(106, 140, 255, 0.2);
+    }
+    .input-field::placeholder { color: rgba(255, 255, 255, 0.3); }
+
+    .btn-transfer {
+      width: 100%;
+      background: linear-gradient(135deg, #6a8cff, #3d5eff);
+      border: none;
+      border-radius: 14px;
+      padding: 15px;
+      color: white;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 6px;
+      box-shadow: 0 8px 20px rgba(61, 94, 255, 0.3);
+    }
+    .btn-transfer:hover { transform: translateY(-1px); box-shadow: 0 12px 24px rgba(61, 94, 255, 0.4); }
+    .btn-transfer:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    .message {
+      margin-top: 12px;
+      padding: 11px 14px;
+      border-radius: 12px;
+      font-size: 13px;
+      font-weight: 500;
+      display: none;
+      animation: slideIn 0.3s ease;
+    }
+    .message.success { display: block; background: rgba(76, 217, 100, 0.15); color: #4cd964; border: 1px solid rgba(76, 217, 100, 0.2); }
+    .message.error { display: block; background: rgba(255, 59, 48, 0.15); color: #ff6b5e; border: 1px solid rgba(255, 59, 48, 0.2); }
+    .message.info { display: block; background: rgba(106, 140, 255, 0.15); color: #8fa8ff; border: 1px solid rgba(106, 140, 255, 0.2); }
+
+    /* ========== НАСТРОЙКИ / АДМИН ========== */
+    .settings-screen-inner {
+      width: 100%;
+      max-width: 420px;
+      max-height: calc(100vh - 32px);
+      overflow-y: auto;
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(20px);
+      border-radius: 40px;
+      padding: 22px 20px 26px;
+      box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .settings-screen-inner::-webkit-scrollbar { width: 0; }
+
+    .page-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 22px;
+      padding: 0 4px;
+    }
+    .back-btn {
+      width: 38px;
+      height: 38px;
+      background: rgba(255, 255, 255, 0.07);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 18px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .back-btn:hover { background: rgba(255, 255, 255, 0.14); }
+    .page-title { color: white; font-size: 20px; font-weight: 800; letter-spacing: -0.5px; }
+    .page-title.admin-title { background: linear-gradient(135deg, #ffb547, #ff6b00); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+
+    .settings-card {
+      background: rgba(255, 255, 255, 0.04);
+      border-radius: 22px;
+      padding: 18px;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      margin-bottom: 14px;
+    }
+
+    .user-profile { display: flex; align-items: center; gap: 14px; margin-bottom: 18px; }
+    .avatar {
+      width: 58px; height: 58px;
+      border-radius: 20px;
+      background: linear-gradient(135deg, #6a8cff, #3d5eff);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 24px; font-weight: 800; color: white;
+      box-shadow: 0 10px 24px rgba(61, 94, 255, 0.4);
+      flex-shrink: 0;
+    }
+    .avatar.admin-avatar {
+      background: linear-gradient(135deg, #ffb547, #ff6b00);
+      box-shadow: 0 10px 24px rgba(255, 107, 0, 0.4);
+    }
+    .user-info h3 { color: white; font-size: 18px; font-weight: 700; margin-bottom: 3px; }
+    .user-info p { color: rgba(255, 255, 255, 0.5); font-size: 13px; font-family: 'Courier New', monospace; }
+
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 13px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    }
+    .info-row:last-child { border-bottom: none; }
+    .info-row-label { color: rgba(255, 255, 255, 0.5); font-size: 13.5px; font-weight: 500; }
+    .info-row-value { color: white; font-size: 14px; font-weight: 600; }
+
+    .settings-section-title {
+      color: rgba(255, 255, 255, 0.4);
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      padding: 8px 6px 6px;
+    }
+
+    .toggle-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    }
+    .toggle-row:last-child { border-bottom: none; }
+    .toggle-label { color: white; font-size: 14px; font-weight: 500; }
+    .toggle-desc { color: rgba(255, 255, 255, 0.4); font-size: 12px; margin-top: 2px; }
+    .switch {
+      position: relative;
+      width: 46px; height: 26px;
+      background: rgba(255, 255, 255, 0.12);
+      border-radius: 30px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      flex-shrink: 0;
+    }
+    .switch::after {
+      content: '';
+      position: absolute;
+      top: 3px; left: 3px;
+      width: 20px; height: 20px;
+      background: white;
+      border-radius: 50%;
+      transition: all 0.3s ease;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+    .switch.on { background: linear-gradient(135deg, #6a8cff, #3d5eff); }
+    .switch.on::after { left: 23px; }
+
+    /* Админ-таблица пользователей */
+    .admin-user-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px;
+      background: rgba(255, 255, 255, 0.03);
+      border-radius: 14px;
+      margin-bottom: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .admin-user-info { flex: 1; min-width: 0; }
+    .admin-user-name {
+      color: white;
+      font-size: 14px;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .admin-user-meta {
+      color: rgba(255, 255, 255, 0.4);
+      font-size: 11px;
+      font-family: 'Courier New', monospace;
+      margin-top: 2px;
+    }
+    .admin-user-balance {
+      color: #ffb547;
+      font-size: 13px;
+      font-weight: 700;
+      font-family: 'Courier New', monospace;
+      margin-top: 2px;
+    }
+    .admin-user-actions { display: flex; gap: 6px; flex-shrink: 0; }
+    .mini-btn {
+      width: 30px; height: 30px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.07);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: rgba(255, 255, 255, 0.85);
+      font-size: 13px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+    }
+    .mini-btn:hover { background: rgba(255, 255, 255, 0.15); }
+    .mini-btn.danger:hover { background: rgba(255, 59, 48, 0.25); color: #ff6b5e; }
+    .mini-btn.gold:hover { background: rgba(255, 165, 0, 0.25); color: #ffb547; }
+
+    .admin-total {
+      background: linear-gradient(135deg, rgba(255, 165, 0, 0.1), rgba(255, 107, 0, 0.1));
+      border: 1px solid rgba(255, 165, 0, 0.2);
+      border-radius: 16px;
+      padding: 14px;
+      margin-bottom: 14px;
+      text-align: center;
+    }
+    .admin-total-label { color: rgba(255, 255, 255, 0.5); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+    .admin-total-value { color: #ffb547; font-size: 22px; font-weight: 800; letter-spacing: -0.5px; }
+
+    .admin-input-row { display: flex; gap: 8px; margin-top: 8px; }
+    .admin-input-row .input-field { flex: 1; }
+
+    /* ========== МОДАЛКИ ========== */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(4px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 20px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+    .modal-overlay.active { opacity: 1; pointer-events: all; }
+    .modal {
+      background: #1c2238;
+      border-radius: 28px;
+      padding: 28px 24px;
+      width: 100%;
+      max-width: 360px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 40px 80px rgba(0, 0, 0, 0.8);
+      transform: scale(0.95);
+      transition: transform 0.3s ease;
+    }
+    .modal-overlay.active .modal { transform: scale(1); }
+    .modal-icon {
+      width: 56px; height: 56px;
+      background: rgba(106, 140, 255, 0.15);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 24px;
+      margin: 0 auto 16px;
+      border: 1px solid rgba(106, 140, 255, 0.2);
+    }
+    .modal-icon.danger { background: rgba(255, 59, 48, 0.15); border-color: rgba(255, 59, 48, 0.25); }
+    .modal-icon.gold { background: rgba(255, 165, 0, 0.15); border-color: rgba(255, 165, 0, 0.25); }
+    .modal-title { color: white; font-size: 19px; font-weight: 700; text-align: center; margin-bottom: 8px; }
+    .modal-text {
+      color: rgba(255, 255, 255, 0.6);
+      font-size: 14px;
+      text-align: center;
+      line-height: 1.6;
+      margin-bottom: 20px;
+    }
+    .modal-card-number {
+      background: rgba(255, 255, 255, 0.07);
+      border-radius: 14px;
+      padding: 14px;
+      text-align: center;
+      font-family: 'Courier New', monospace;
+      font-size: 26px;
+      font-weight: 700;
+      color: #6a8cff;
+      letter-spacing: 4px;
+      margin-bottom: 16px;
+      border: 1px solid rgba(106, 140, 255, 0.2);
+    }
+    .btn-modal {
+      width: 100%;
+      background: linear-gradient(135deg, #6a8cff, #3d5eff);
+      border: none;
+      border-radius: 15px;
+      padding: 15px;
+      color: white;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .btn-modal:hover { opacity: 0.9; }
+    .btn-modal.danger { background: linear-gradient(135deg, #ff5e52, #e6392e); }
+    .btn-modal.gold { background: linear-gradient(135deg, #ffb547, #ff6b00); }
+
+    .hidden { display: none !important; }
+
+    @media (max-width: 400px) {
+      .auth-container { padding: 28px 18px 24px; }
+      .bank-app, .settings-screen-inner { padding: 16px 14px 20px; }
+      .card-number { font-size: 20px; letter-spacing: 2px; }
+      .balance-amount { font-size: 18px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ========== ЭКРАН: РЕГИСТРАЦИЯ / ВХОД ========== -->
+  <div class="screen active" id="authScreen">
+    <div class="auth-container">
+      <div class="auth-logo">
+        <div class="auth-logo-icon">🏦</div>
+        <div class="auth-title">sadape<span style="color:#6a8cff">.bank</span></div>
+        <div class="auth-subtitle">Твой банк — твои жбкоины</div>
+      </div>
+
+      <div class="auth-tabs">
+        <div class="auth-tab active" data-tab="register">Регистрация</div>
+        <div class="auth-tab" data-tab="login">Вход</div>
+      </div>
+
+      <div class="auth-form active" id="registerForm">
+        <div class="field-group">
+          <label class="field-label">Ваше имя</label>
+          <input type="text" class="field-input" id="regName" placeholder="Как вас зовут?" maxlength="20" autocomplete="off">
+        </div>
+        <div class="field-group">
+          <label class="field-label">Логин</label>
+          <input type="text" class="field-input" id="regLogin" placeholder="Придумайте логин" maxlength="20" autocomplete="off">
+        </div>
+        <div class="field-group">
+          <label class="field-label">Пароль</label>
+          <input type="password" class="field-input" id="regPassword" placeholder="Минимум 4 символа" maxlength="30" autocomplete="off">
+        </div>
+        <button class="btn-primary" id="registerBtn">Создать аккаунт</button>
+        <div class="msg" id="regMsg"></div>
+      </div>
+
+      <div class="auth-form" id="loginForm">
+        <div class="field-group">
+          <label class="field-label">Логин</label>
+          <input type="text" class="field-input" id="logLogin" placeholder="Ваш логин" maxlength="20" autocomplete="off">
+        </div>
+        <div class="field-group">
+          <label class="field-label">Пароль</label>
+          <input type="password" class="field-input" id="logPassword" placeholder="Ваш пароль" maxlength="30" autocomplete="off">
+        </div>
+        <button class="btn-primary" id="loginBtn">Войти</button>
+        <div class="msg" id="logMsg"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== ЭКРАН: ГЛАВНАЯ ========== -->
+  <div class="screen" id="mainScreen">
+    <div class="bank-app">
+      <div class="header">
+        <div class="logo">
+          <div class="logo-icon">🏦</div>
+          <span class="logo-text">sadape<span>.bank</span></span>
+        </div>
+        <div class="header-actions">
+          <div class="icon-btn admin hidden" id="adminBtn" title="Админ-панель">👑</div>
+          <div class="icon-btn" id="settingsBtn" title="Настройки">⚙️</div>
+        </div>
+      </div>
+
+      <div class="bank-card" id="mainCard">
+        <div class="card-chip"></div>
+        <div class="card-number" id="cardNumber">•••• ••••</div>
+        <div class="card-footer">
+          <div>
+            <div class="card-label">Владелец</div>
+            <div class="card-holder" id="cardHolder">—</div>
+          </div>
+          <div class="balance-container">
+            <div class="card-label">Баланс</div>
+            <div class="balance-amount" id="balanceAmount">0 жбк</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="transfer-section">
+        <div class="section-title"><span>💸</span> Перевод жбкоинов</div>
+        <div class="input-group">
+          <label class="input-label">Номер карты получателя</label>
+          <input type="text" class="field-input" id="recipientInput" placeholder="0000" maxlength="4" inputmode="numeric" autocomplete="off" style="padding:13px 15px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);border-radius:14px;color:white;font-size:15px;font-weight:500;outline:none;">
+        </div>
+        <div class="input-group">
+          <label class="input-label">Сумма перевода (жбк)</label>
+          <input type="number" class="field-input" id="amountInput" placeholder="0" min="1" step="1" inputmode="numeric" style="padding:13px 15px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);border-radius:14px;color:white;font-size:15px;font-weight:500;outline:none;">
+        </div>
+        <button class="btn-transfer" id="transferBtn"><span>↗</span> Перевести</button>
+        <div class="message" id="messageBox"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== ЭКРАН: НАСТРОЙКИ ========== -->
+  <div class="screen" id="settingsScreen">
+    <div class="settings-screen-inner">
+      <div class="page-header">
+        <div class="back-btn" id="backFromSettings">←</div>
+        <div class="page-title">Настройки</div>
+      </div>
+
+      <div class="settings-card">
+        <div class="user-profile">
+          <div class="avatar" id="settingsAvatar">?</div>
+          <div class="user-info">
+            <h3 id="settingsName">—</h3>
+            <p id="settingsLogin">@—</p>
+          </div>
+        </div>
+        <div class="info-row">
+          <span class="info-row-label">Номер карты</span>
+          <span class="info-row-value" id="settingsCardNumber" style="font-family:'Courier New',monospace;">—</span>
+        </div>
+        <div class="info-row">
+          <span class="info-row-label">Баланс</span>
+          <span class="info-row-value" id="settingsBalance">0 жбк</span>
+        </div>
+        <div class="info-row">
+          <span class="info-row-label">Дата регистрации</span>
+          <span class="info-row-value" id="settingsCreated">—</span>
+        </div>
+      </div>
+
+      <div class="settings-section-title">Настройки приложения</div>
+      <div class="settings-card" style="padding: 4px 18px;">
+        <div class="toggle-row">
+          <div>
+            <div class="toggle-label">Уведомления о переводах</div>
+            <div class="toggle-desc">Показывать всплывающие уведомления</div>
+          </div>
+          <div class="switch on" id="notifToggle"></div>
+        </div>
+        <div class="toggle-row">
+          <div>
+            <div class="toggle-label">Скрывать баланс</div>
+            <div class="toggle-desc">Скрыть сумму на главном экране</div>
+          </div>
+          <div class="switch" id="hideBalanceToggle"></div>
+        </div>
+        <div class="toggle-row">
+          <div>
+            <div class="toggle-label">Звуковые эффекты</div>
+            <div class="toggle-desc">Звук при переводах</div>
+          </div>
+          <div class="switch on" id="soundToggle"></div>
+        </div>
+      </div>
+
+      <div class="settings-section-title">Аккаунт</div>
+      <div class="settings-card">
+        <button class="btn-secondary" id="changeCardBtn">🔄 Сменить номер карты</button>
+        <button class="btn-danger" id="logoutBtn">🚪 Выйти из аккаунта</button>
+        <button class="btn-danger" id="deleteAccountBtn" style="margin-top:10px;">🗑️ Удалить аккаунт</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== ЭКРАН: АДМИН-ПАНЕЛЬ ========== -->
+  <div class="screen" id="adminScreen">
+    <div class="settings-screen-inner">
+      <div class="page-header">
+        <div class="back-btn" id="backFromAdmin">←</div>
+        <div class="page-title admin-title">👑 Админ-панель</div>
+      </div>
+
+      <div class="admin-total">
+        <div class="admin-total-label">Всего жбкоинов в системе</div>
+        <div class="admin-total-value" id="adminTotalCoins">0 жбк</div>
+      </div>
+
+      <div class="settings-section-title">Эмиссия жбкоинов</div>
+      <div class="settings-card">
+        <div style="color: rgba(255,255,255,0.7); font-size: 13px; margin-bottom: 8px;">Создать жбкоины и зачислить на карту</div>
+        <div class="field-group" style="margin-bottom: 8px;">
+          <input type="text" class="field-input" id="adminCardInput" placeholder="Номер карты (4 цифры)" maxlength="4" inputmode="numeric">
+        </div>
+        <div class="admin-input-row">
+          <input type="number" class="field-input" id="adminAmountInput" placeholder="Сумма жбк" min="1" step="1" inputmode="numeric">
+          <button class="btn-primary" id="adminMintBtn" style="width:auto; padding:0 20px; margin:0;">💰</button>
+        </div>
+        <div class="msg" id="adminMintMsg"></div>
+      </div>
+
+      <div class="settings-section-title">Все пользователи</div>
+      <div class="settings-card" style="padding: 14px;" id="adminUsersList">
+        <!-- Заполняется динамически -->
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== МОДАЛКА: НОВАЯ КАРТА ========== -->
+  <div class="modal-overlay" id="cardModal">
+    <div class="modal">
+      <div class="modal-icon">🎉</div>
+      <div class="modal-title">Ваша карта готова!</div>
+      <div class="modal-text">Запомните номер карты — он понадобится другим для переводов вам.</div>
+      <div class="modal-card-number" id="generatedCardNumber">0000</div>
+      <button class="btn-modal" id="modalOkBtn">Отлично</button>
+    </div>
+  </div>
+
+  <!-- ========== МОДАЛКА: ПОДТВЕРЖДЕНИЕ ========== -->
+  <div class="modal-overlay" id="confirmModal">
+    <div class="modal">
+      <div class="modal-icon danger">⚠️</div>
+      <div class="modal-title" id="confirmTitle">Подтверждение</div>
+      <div class="modal-text" id="confirmText">Вы уверены?</div>
+      <button class="btn-modal danger" id="confirmYesBtn">Подтвердить</button>
+      <button class="btn-secondary" id="confirmNoBtn" style="margin-top:10px;">Отмена</button>
+    </div>
+  </div>
+
+  <!-- ========== МОДАЛКА: АДМИН — БАЛАНС ПОЛЬЗОВАТЕЛЯ ========== -->
+  <div class="modal-overlay" id="adminBalanceModal">
+    <div class="modal">
+      <div class="modal-icon gold">💰</div>
+      <div class="modal-title" id="adminBalanceTitle">Изменить баланс</div>
+      <div class="modal-text" id="adminBalanceSubtitle">Пользователь</div>
+      <div class="field-group">
+        <input type="number" class="field-input" id="adminBalanceInput" placeholder="Новый баланс" min="0" step="1" inputmode="numeric">
+      </div>
+      <button class="btn-modal gold" id="adminBalanceSave">Сохранить</button>
+      <button class="btn-secondary" id="adminBalanceCancel" style="margin-top:10px;">Отмена</button>
+    </div>
+  </div>
+
+<script>
+(function() {
+  'use strict';
+
+  // ========== КОНСТАНТЫ ==========
+  const ACCOUNTS_KEY = 'sadape_accounts_v1';
+  const REGISTRY_KEY = 'sadape_registry_v1';
+  const SESSION_KEY = 'sadape_session_v1';
+  const CARD_LENGTH = 4;
+  const START_BALANCE = 1000;
+  const CURRENCY = 'жбк';
+
+  // ========== СОСТОЯНИЕ ==========
+  let currentUser = null;
+
+  // ========== УТИЛИТЫ ==========
+  function loadJSON(key, fallback = {}) {
+    try { const raw = localStorage.getItem(key); return raw ? JSON.parse(raw) : fallback; }
+    catch (e) { return fallback; }
+  }
+  function saveJSON(key, val) {
+    try { localStorage.setItem(key, JSON.stringify(val)); } catch (e) {}
+  }
+
+  function getAccounts() { return loadJSON(ACCOUNTS_KEY, {}); }
+  function saveAccounts(a) { saveJSON(ACCOUNTS_KEY, a); }
+  function getRegistry() { return loadJSON(REGISTRY_KEY, {}); }
+  function saveRegistry(r) { saveJSON(REGISTRY_KEY, r); }
+
+  // ========== ГЕНЕРАЦИЯ КАРТЫ ==========
+  function generateUniqueCard() {
+    const registry = getRegistry();
+    for (let i = 0; i < 9000; i++) {
+      const num = String(Math.floor(1000 + Math.random() * 9000));
+      if (!registry[num]) return num;
+    }
+    for (let n = 1000; n <= 9999; n++) {
+      if (!registry[String(n)]) return String(n);
+    }
+    throw new Error('Нет свободных номеров карт');
+  }
+
+  function registerCardInRegistry(cardNumber, login, balance) {
+    const reg = getRegistry();
+    reg[cardNumber] = { login, balance, createdAt: Date.now() };
+    saveRegistry(reg);
+  }
+  function getRegistryEntry(cardNumber) { return getRegistry()[cardNumber] || null; }
+  function updateRegistryBalance(cardNumber, newBalance) {
+    const reg = getRegistry();
+    if (reg[cardNumber]) { reg[cardNumber].balance = newBalance; saveRegistry(reg); }
+  }
+  function cardExists(cardNumber) { return !!getRegistry()[cardNumber]; }
+
+  // ========== ФОРМАТ ==========
+  function formatBalance(v) { return (v || 0).toLocaleString('ru-RU') + ' ' + CURRENCY; }
+  function formatCard(c) { return c ? c.split('').join(' ') : '•••• ••••'; }
+  function formatDate(ts) {
+    if (!ts) return '—';
+    return new Date(ts).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', year: 'numeric' });
+  }
+
+  // ========== DOM ==========
+  const $ = id => document.getElementById(id);
+  const authScreen = $('authScreen');
+  const mainScreen = $('mainScreen');
+  const settingsScreen = $('settingsScreen');
+  const adminScreen = $('adminScreen');
+
+  function showScreen(el) {
+    [authScreen, mainScreen, settingsScreen, adminScreen].forEach(s => s.classList.remove('active'));
+    el.classList.add('active');
+  }
+
+  function showMsg(el, text, type) {
+    el.textContent = text;
+    el.className = 'msg show ' + type;
+    clearTimeout(el._t);
+    el._t = setTimeout(() => { el.className = 'msg'; }, 4000);
+  }
+
+  function showMainMessage(text, type, duration = 3500) {
+    const box = $('messageBox');
+    box.textContent = text;
+    box.className = 'message ' + type;
+    clearTimeout(box._t);
+    if (duration > 0) box._t = setTimeout(() => { box.className = 'message'; }, duration);
+  }
+
+  // ========== СОЗДАНИЕ АККАУНТА АДМИНА ==========
+  function ensureAdminAccount() {
+    const accounts = getAccounts();
+    if (!accounts['admin']) {
+      // Создаём аккаунт админа
+      const cardNumber = '0000'; // зарезервированный номер для админа
+      const reg = getRegistry();
+      
+      // Если карта 0000 занята — ищем свободную, но лучше зарезервировать
+      let adminCard = '0000';
+      if (reg[adminCard] && reg[adminCard].login !== 'admin') {
+        // Fallback — генерируем
+        adminCard = generateUniqueCard();
+      }
+      
+      accounts['admin'] = {
+        login: 'admin',
+        name: 'Администратор',
+        password: 'qwerty',
+        cardNumber: adminCard,
+        createdAt: Date.now(),
+        isAdmin: true,
+        settings: { notifications: true, hideBalance: false, sound: true }
+      };
+      saveAccounts(accounts);
+      
+      // Регистрируем карту с большим балансом
+      reg[adminCard] = {
+        login: 'admin',
+        balance: 999999,
+        createdAt: Date.now()
+      };
+      saveRegistry(reg);
+      
+      console.log('✅ Аккаунт админа создан: admin / qwerty, карта:', adminCard);
+    }
+  }
+
+  // ========== АВТОРИЗАЦИЯ ==========
+  document.querySelectorAll('.auth-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      const target = tab.dataset.tab;
+      $('registerForm').classList.toggle('active', target === 'register');
+      $('loginForm').classList.toggle('active', target === 'login');
+    });
+  });
+
+  // Регистрация
+  $('registerBtn').addEventListener('click', () => {
+    const name = $('regName').value.trim();
+    const login = $('regLogin').value.trim().toLowerCase();
+    const password = $('regPassword').value;
+    const msg = $('regMsg');
+
+    if (name.length < 2) return showMsg(msg, 'Введите имя (минимум 2 символа)', 'error');
+    if (login.length < 3) return showMsg(msg, 'Логин минимум 3 символа', 'error');
+    if (!/^[a-z0-9_]+$/.test(login)) return showMsg(msg, 'Логин: только a-z, 0-9 и _', 'error');
+    if (password.length < 4) return showMsg(msg, 'Пароль минимум 4 символа', 'error');
+
+    const accounts = getAccounts();
+    if (accounts[login]) return showMsg(msg, 'Такой логин уже занят', 'error');
+    if (login === 'admin') return showMsg(msg, 'Этот логин зарезервирован', 'error');
+
+    const cardNumber = generateUniqueCard();
+    const createdAt = Date.now();
+
+    accounts[login] = {
+      login, name, password, cardNumber, createdAt,
+      settings: { notifications: true, hideBalance: false, sound: true }
+    };
+    saveAccounts(accounts);
+    registerCardInRegistry(cardNumber, login, START_BALANCE);
+
+    $('generatedCardNumber').textContent = cardNumber;
+    $('cardModal').classList.add('active');
+
+    currentUser = { login, name, cardNumber, createdAt, settings: accounts[login].settings };
+    saveJSON(SESSION_KEY, { login });
+
+    $('regName').value = '';
+    $('regLogin').value = '';
+    $('regPassword').value = '';
+  });
+
+  $('modalOkBtn').addEventListener('click', () => {
+    $('cardModal').classList.remove('active');
+    enterApp();
+  });
+
+  // Вход
+  $('loginBtn').addEventListener('click', () => {
+    const login = $('logLogin').value.trim().toLowerCase();
+    const password = $('logPassword').value;
+    const msg = $('logMsg');
+
+    if (!login || !password) return showMsg(msg, 'Заполните все поля', 'error');
+
+    const accounts = getAccounts();
+    const acc = accounts[login];
+    if (!acc) return showMsg(msg, 'Пользователь не найден', 'error');
+    if (acc.password !== password) return showMsg(msg, 'Неверный пароль', 'error');
+
+    currentUser = { ...acc };
+    saveJSON(SESSION_KEY, { login });
+
+    $('logLogin').value = '';
+    $('logPassword').value = '';
+
+    enterApp();
+  });
+
+  ['regName', 'regLogin', 'regPassword'].forEach(id => {
+    $(id).addEventListener('keypress', e => { if (e.key === 'Enter') $('registerBtn').click(); });
+  });
+  ['logLogin', 'logPassword'].forEach(id => {
+    $(id).addEventListener('keypress', e => { if (e.key === 'Enter') $('loginBtn').click(); });
+  });
+
+  // ========== ВХОД В ПРИЛОЖЕНИЕ ==========
+  function enterApp() {
+    if (!currentUser) return;
+    refreshUserFromStorage();
+    updateMainUI();
+    updateAdminVisibility();
+    showScreen(mainScreen);
+
+    const firstVisit = !localStorage.getItem('sadape_welcomed_' + currentUser.login);
+    if (firstVisit) {
+      localStorage.setItem('sadape_welcomed_' + currentUser.login, '1');
+      const role = currentUser.isAdmin ? '👑 Администратор' : '';
+      showMainMessage(`👋 Добро пожаловать, ${currentUser.name}! ${role} Ваша карта: ${currentUser.cardNumber}`, 'info', 6000);
+    }
+  }
+
+  function refreshUserFromStorage() {
+    if (!currentUser) return;
+    const accounts = getAccounts();
+    const acc = accounts[currentUser.login];
+    if (acc) {
+      currentUser = { ...acc };
+      const entry = getRegistryEntry(acc.cardNumber);
+      if (entry) currentUser.balance = entry.balance;
+    }
+  }
+
+  function updateAdminVisibility() {
+    const adminBtn = $('adminBtn');
+    const mainCard = $('mainCard');
+    if (currentUser && currentUser.isAdmin) {
+      adminBtn.classList.remove('hidden');
+      mainCard.classList.add('admin-card');
+    } else {
+      adminBtn.classList.add('hidden');
+      mainCard.classList.remove('admin-card');
+    }
+  }
+
+  // ========== ОБНОВЛЕНИЕ ГЛАВНОГО ЭКРАНА ==========
+  function updateMainUI() {
+    if (!currentUser) return;
+    refreshUserFromStorage();
+    const entry = getRegistryEntry(currentUser.cardNumber);
+    const balance = entry ? entry.balance : 0;
+
+    $('cardNumber').textContent = formatCard(currentUser.cardNumber);
+    $('cardHolder').textContent = currentUser.name;
+
+    if (currentUser.settings?.hideBalance) {
+      $('balanceAmount').textContent = '•••• ' + CURRENCY;
+    } else {
+      $('balanceAmount').textContent = formatBalance(balance);
+    }
+  }
+
+  // ========== ПЕРЕВОД ==========
+  $('transferBtn').addEventListener('click', () => {
+    if (!currentUser) return;
+
+    const recipient = $('recipientInput').value.trim().replace(/\D/g, '');
+    const amountRaw = $('amountInput').value.trim();
+
+    if (recipient.length !== CARD_LENGTH) return showMainMessage('Номер карты должен состоять из 4 цифр', 'error');
+    if (!amountRaw) return showMainMessage('Введите сумму перевода', 'error');
+
+    const amount = Number(amountRaw);
+    if (!Number.isFinite(amount) || amount <= 0 || !Number.isInteger(amount)) {
+      return showMainMessage('Сумма должна быть целым числом больше 0', 'error');
+    }
+    if (recipient === currentUser.cardNumber) return showMainMessage('Нельзя перевести самому себе', 'error');
+    if (!cardExists(recipient)) return showMainMessage(`Карта ${recipient} не найдена в базе банка`, 'error');
+
+    refreshUserFromStorage();
+    const senderEntry = getRegistryEntry(currentUser.cardNumber);
+    const senderBalance = senderEntry ? senderEntry.balance : 0;
+
+    if (amount > senderBalance) return showMainMessage(`Недостаточно средств. Баланс: ${formatBalance(senderBalance)}`, 'error');
+
+    const btn = $('transferBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<span style="display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,0.3);border-top-color:white;border-radius:50%;animation:spin 0.6s linear infinite;"></span>';
+
+    setTimeout(() => {
+      try {
+        const reg = getRegistry();
+        if (!reg[recipient]) throw new Error('Получатель исчез');
+        reg[currentUser.cardNumber].balance -= amount;
+        reg[recipient].balance += amount;
+        saveRegistry(reg);
+
+        refreshUserFromStorage();
+        updateMainUI();
+
+        if (currentUser.settings?.sound) playSound();
+        $('recipientInput').value = '';
+        $('amountInput').value = '';
+
+        if (currentUser.settings?.notifications !== false) {
+          showMainMessage(`✅ Переведено ${formatBalance(amount)} на карту ${recipient}`, 'success', 4000);
+        }
+      } catch (e) {
+        console.error(e);
+        showMainMessage('Ошибка при переводе. Попробуйте ещё раз.', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<span>↗</span> Перевести';
+      }
+    }, 350);
+  });
+
+  $('recipientInput').addEventListener('input', function() {
+    this.value = this.value.replace(/\D/g, '').slice(0, CARD_LENGTH);
+  });
+  $('amountInput').addEventListener('input', function() {
+    this.value = this.value.replace(/[^\d]/g, '');
+  });
+  $('recipientInput').addEventListener('keypress', e => { if (e.key === 'Enter') $('amountInput').focus(); });
+  $('amountInput').addEventListener('keypress', e => { if (e.key === 'Enter') $('transferBtn').click(); });
+
+  function playSound() {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.frequency.value = 880;
+      gain.gain.setValueAtTime(0.08, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.2);
+      osc.start(); osc.stop(ctx.currentTime + 0.2);
+    } catch (e) {}
+  }
+
+  // ========== НАСТРОЙКИ ==========
+  $('settingsBtn').addEventListener('click', () => {
+    openSettings();
+    showScreen(settingsScreen);
+  });
+
+  $('backFromSettings').addEventListener('click', () => {
+    updateMainUI();
+    showScreen(mainScreen);
+  });
+
+  function openSettings() {
+    if (!currentUser) return;
+    refreshUserFromStorage();
+
+    $('settingsAvatar').textContent = (currentUser.name || '?').charAt(0).toUpperCase();
+    $('settingsAvatar').className = 'avatar' + (currentUser.isAdmin ? ' admin-avatar' : '');
+    $('settingsName').textContent = currentUser.name + (currentUser.isAdmin ? ' 👑' : '');
+    $('settingsLogin').textContent = '@' + currentUser.login;
+    $('settingsCardNumber').textContent = currentUser.cardNumber;
+    $('settingsBalance').textContent = formatBalance(getRegistryEntry(currentUser.cardNumber)?.balance || 0);
+    $('settingsCreated').textContent = formatDate(currentUser.createdAt);
+
+    const s = currentUser.settings || {};
+    $('notifToggle').classList.toggle('on', s.notifications !== false);
+    $('hideBalanceToggle').classList.toggle('on', !!s.hideBalance);
+    $('soundToggle').classList.toggle('on', s.sound !== false);
+  }
+
+  function bindToggle(el, key) {
+    el.addEventListener('click', () => {
+      if (!currentUser) return;
+      const accounts = getAccounts();
+      const acc = accounts[currentUser.login];
+      if (!acc) return;
+      if (!acc.settings) acc.settings = {};
+      if (key === 'hideBalance') {
+        acc.settings[key] = !acc.settings[key];
+        el.classList.toggle('on', !!acc.settings[key]);
+      } else {
+        const current = acc.settings[key] !== false;
+        acc.settings[key] = !current;
+        el.classList.toggle('on', acc.settings[key] !== false);
+      }
+      saveAccounts(accounts);
+      currentUser.settings = acc.settings;
+      if (key === 'hideBalance') updateMainUI();
+    });
+  }
+  bindToggle($('notifToggle'), 'notifications');
+  bindToggle($('hideBalanceToggle'), 'hideBalance');
+  bindToggle($('soundToggle'), 'sound');
+
+  // Смена карты
+  $('changeCardBtn').addEventListener('click', () => {
+    if (!currentUser) return;
+    openConfirm(
+      'Сменить номер карты?',
+      'Старый номер станет недействительным. Баланс сохранится.',
+      () => {
+        const accounts = getAccounts();
+        const acc = accounts[currentUser.login];
+        if (!acc) return;
+        const reg = getRegistry();
+        const oldCard = acc.cardNumber;
+        const oldBalance = reg[oldCard] ? reg[oldCard].balance : 0;
+
+        delete reg[oldCard];
+
+        let newCard;
+        do { newCard = generateUniqueCard(); } while (reg[newCard]);
+
+        reg[newCard] = { login: currentUser.login, balance: oldBalance, createdAt: Date.now() };
+        saveRegistry(reg);
+
+        acc.cardNumber = newCard;
+        saveAccounts(accounts);
+        currentUser.cardNumber = newCard;
+
+        $('generatedCardNumber').textContent = newCard;
+        $('cardModal').classList.add('active');
+        $('modalOkBtn').onclick = () => {
+          $('cardModal').classList.remove('active');
+          $('modalOkBtn').onclick = () => {
+            $('cardModal').classList.remove('active');
+            enterApp();
+          };
+          openSettings();
+        };
+      }
+    );
+  });
+
+  // Выход
+  $('logoutBtn').addEventListener('click', () => {
+    openConfirm(
+      'Выйти из аккаунта?',
+      'Карта и баланс сохранятся. Войти можно будет снова по логину и паролю.',
+      () => {
+        localStorage.removeItem(SESSION_KEY);
+        currentUser = null;
+        ['logLogin', 'logPassword', 'regName', 'regLogin', 'regPassword'].forEach(id => $(id).value = '');
+        document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+        document.querySelector('.auth-tab[data-tab="login"]').classList.add('active');
+        $('registerForm').classList.remove('active');
+        $('loginForm').classList.add('active');
+        showScreen(authScreen);
+      }
+    );
+  });
+
+  // Удаление
+  $('deleteAccountBtn').addEventListener('click', () => {
+    if (currentUser && currentUser.isAdmin) {
+      alert('Нельзя удалить аккаунт администратора');
+      return;
+    }
+    openConfirm(
+      'Удалить аккаунт?',
+      'Это действие необратимо. Карта, баланс и все данные будут удалены навсегда.',
+      () => {
+        const accounts = getAccounts();
+        const acc = accounts[currentUser.login];
+        if (acc) {
+          const reg = getRegistry();
+          delete reg[acc.cardNumber];
+          saveRegistry(reg);
+          delete accounts[currentUser.login];
+          saveAccounts(accounts);
+        }
+        localStorage.removeItem(SESSION_KEY);
+        localStorage.removeItem('sadape_welcomed_' + currentUser.login);
+        currentUser = null;
+        $('logLogin').value = '';
+        $('logPassword').value = '';
+        document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+        document.querySelector('.auth-tab[data-tab="register"]').classList.add('active');
+        $('loginForm').classList.remove('active');
+        $('registerForm').classList.add('active');
+        showScreen(authScreen);
+      }
+    );
+  });
+
+  // ========== АДМИН-ПАНЕЛЬ ==========
+  $('adminBtn').addEventListener('click', () => {
+    if (!currentUser || !currentUser.isAdmin) return;
+    openAdminPanel();
+    showScreen(adminScreen);
+  });
+
+  $('backFromAdmin').addEventListener('click', () => {
+    updateMainUI();
+    showScreen(mainScreen);
+  });
+
+  function openAdminPanel() {
+    const reg = getRegistry();
+    const accounts = getAccounts();
+
+    // Общая сумма жбкоинов
+    let total = 0;
+    Object.values(reg).forEach(e => { total += e.balance || 0; });
+    $('adminTotalCoins').textContent = formatBalance(total);
+
+    // Список пользователей
+    const list = $('adminUsersList');
+    list.innerHTML = '';
+
+    const users = Object.values(accounts).sort((a, b) => {
+      if (a.isAdmin && !b.isAdmin) return -1;
+      if (!a.isAdmin && b.isAdmin) return 1;
+      return a.login.localeCompare(b.login);
+    });
+
+    if (users.length === 0) {
+      list.innerHTML = '<div style="color:rgba(255,255,255,0.4); text-align:center; padding:20px;">Пользователей нет</div>';
+      return;
+    }
+
+    users.forEach(u => {
+      const entry = reg[u.cardNumber] || { balance: 0 };
+      const item = document.createElement('div');
+      item.className = 'admin-user-item';
+      
+      const isAdmin = u.isAdmin;
+      item.innerHTML = `
+        <div class="admin-user-info">
+          <div class="admin-user-name">${escapeHtml(u.name)} ${isAdmin ? '👑' : ''} <span style="color:rgba(255,255,255,0.3);font-size:11px;">@${escapeHtml(u.login)}</span></div>
+          <div class="admin-user-meta">💳 ${u.cardNumber}</div>
+          <div class="admin-user-balance">${formatBalance(entry.balance || 0)}</div>
+        </div>
+        <div class="admin-user-actions">
+          <button class="mini-btn gold" data-action="balance" data-login="${escapeHtml(u.login)}" title="Изменить баланс">💰</button>
+          ${!isAdmin ? `<button class="mini-btn danger" data-action="delete" data-login="${escapeHtml(u.login)}" title="Удалить аккаунт">🗑️</button>` : ''}
+        </div>
+      `;
+      list.appendChild(item);
+    });
+
+    // Обработчики кнопок
+    list.querySelectorAll('[data-action="balance"]').forEach(btn => {
+      btn.addEventListener('click', () => openAdminBalanceModal(btn.dataset.login));
+    });
+    list.querySelectorAll('[data-action="delete"]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const login = btn.dataset.login;
+        openConfirm(
+          'Удалить аккаунт?',
+          `Аккаунт @${login} будет удалён навсегда вместе с картой и балансом.`,
+          () => {
+            const accounts = getAccounts();
+            const acc = accounts[login];
+            if (!acc) return;
+            const reg = getRegistry();
+            delete reg[acc.cardNumber];
+            saveRegistry(reg);
+            delete accounts[login];
+            saveAccounts(accounts);
+            openAdminPanel();
+          }
+        );
+      });
+    });
+  }
+
+  function escapeHtml(str) {
+    return String(str).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  }
+
+  // Эмиссия жбкоинов
+  $('adminMintBtn').addEventListener('click', () => {
+    if (!currentUser || !currentUser.isAdmin) return;
+    const msg = $('adminMintMsg');
+    const cardNum = $('adminCardInput').value.trim().replace(/\D/g, '');
+    const amountRaw = $('adminAmountInput').value.trim();
+
+    if (cardNum.length !== CARD_LENGTH) return showMsg(msg, 'Номер карты: 4 цифры', 'error');
+    const amount = Number(amountRaw);
+    if (!Number.isFinite(amount) || amount <= 0 || !Number.isInteger(amount)) {
+      return showMsg(msg, 'Сумма: целое число больше 0', 'error');
+    }
+    if (!cardExists(cardNum)) return showMsg(msg, `Карта ${cardNum} не найдена`, 'error');
+
+    const reg = getRegistry();
+    reg[cardNum].balance += amount;
+    saveRegistry(reg);
+
+    // Обновляем если это карта админа
+    if (currentUser.cardNumber === cardNum) {
+      refreshUserFromStorage();
+      updateMainUI();
+    }
+
+    showMsg(msg, `✅ Начислено ${formatBalance(amount)} на карту ${cardNum}`, 'success');
+    $('adminCardInput').value = '';
+    $('adminAmountInput').value = '';
+
+    // Обновляем панель
+    setTimeout(openAdminPanel, 500);
+  });
+
+  $('adminCardInput').addEventListener('input', function() {
+    this.value = this.value.replace(/\D/g, '').slice(0, CARD_LENGTH);
+  });
+
+  // Модалка изменения баланса
+  let adminBalanceTargetLogin = null;
+  function openAdminBalanceModal(login) {
+    adminBalanceTargetLogin = login;
+    const accounts = getAccounts();
+    const acc = accounts[login];
+    if (!acc) return;
+    const entry = getRegistryEntry(acc.cardNumber);
+    $('adminBalanceTitle').textContent = 'Изменить баланс';
+    $('adminBalanceSubtitle').textContent = `@${login} — карта ${acc.cardNumber}`;
+    $('adminBalanceInput').value = entry ? entry.balance : 0;
+    $('adminBalanceModal').classList.add('active');
+  }
+
+  $('adminBalanceSave').addEventListener('click', () => {
+    if (!adminBalanceTargetLogin) return;
+    const val = Number($('adminBalanceInput').value);
+    if (!Number.isFinite(val) || val < 0 || !Number.isInteger(val)) {
+      alert('Введите корректное целое число ≥ 0');
+      return;
+    }
+    const accounts = getAccounts();
+    const acc = accounts[adminBalanceTargetLogin];
+    if (!acc) return;
+    const reg = getRegistry();
+    if (!reg[acc.cardNumber]) return;
+    reg[acc.cardNumber].balance = val;
+    saveRegistry(reg);
+    $('adminBalanceModal').classList.remove('active');
+
+    if (currentUser.login === adminBalanceTargetLogin) {
+      refreshUserFromStorage();
+      updateMainUI();
+    }
+    openAdminPanel();
+  });
+
+  $('adminBalanceCancel').addEventListener('click', () => {
+    $('adminBalanceModal').classList.remove('active');
+  });
+
+  // ========== МОДАЛКА ПОДТВЕРЖДЕНИЯ ==========
+  let confirmCallback = null;
+  function openConfirm(title, text, callback) {
+    $('confirmTitle').textContent = title;
+    $('confirmText').textContent = text;
+    confirmCallback = callback;
+    $('confirmModal').classList.add('active');
+  }
+  $('confirmYesBtn').addEventListener('click', () => {
+    $('confirmModal').classList.remove('active');
+    if (confirmCallback) { confirmCallback(); confirmCallback = null; }
+  });
+  $('confirmNoBtn').addEventListener('click', () => {
+    $('confirmModal').classList.remove('active');
+    confirmCallback = null;
+  });
+
+  // ========== АВТО-ВХОД ==========
+  function tryAutoLogin() {
+    try {
+      const session = loadJSON(SESSION_KEY, null);
+      if (session && session.login) {
+        const accounts = getAccounts();
+        const acc = accounts[session.login];
+        if (acc) {
+          currentUser = { ...acc };
+          enterApp();
+          return true;
+        }
+      }
+    } catch (e) {}
+    return false;
+  }
+
+  // Синхронизация
+  window.addEventListener('storage', e => {
+    if (!currentUser) return;
+    if (e.key === REGISTRY_KEY) {
+      refreshUserFromStorage();
+      updateMainUI();
+      if (settingsScreen.classList.contains('active')) openSettings();
+      if (adminScreen.classList.contains('active')) openAdminPanel();
+    }
+    if (e.key === ACCOUNTS_KEY) {
+      const accounts = getAccounts();
+      if (!accounts[currentUser.login]) {
+        localStorage.removeItem(SESSION_KEY);
+        currentUser = null;
+        showScreen(authScreen);
+        return;
+      }
+      refreshUserFromStorage();
+      updateMainUI();
+    }
+  });
+
+  setInterval(() => {
+    if (!currentUser) return;
+    const entry = getRegistryEntry(currentUser.cardNumber);
+    if (entry) {
+      const accounts = getAccounts();
+      const acc = accounts[currentUser.login];
+      if (acc) currentUser = { ...acc, balance: entry.balance };
+      if (mainScreen.classList.contains('active')) updateMainUI();
+      if (settingsScreen.classList.contains('active')) {
+        $('settingsBalance').textContent = formatBalance(entry.balance);
+      }
+      if (adminScreen.classList.contains('active')) openAdminPanel();
+    }
+  }, 2000);
+
+  // ========== СТАРТ ==========
+  ensureAdminAccount();
+  
+  if (!tryAutoLogin()) {
+    showScreen(authScreen);
+  }
+
+  // Отладка
+  window.resetSadapeBank = function() {
+    [ACCOUNTS_KEY, REGISTRY_KEY, SESSION_KEY].forEach(k => localStorage.removeItem(k));
+    Object.keys(localStorage).filter(k => k.startsWith('sadape_welcomed_')).forEach(k => localStorage.removeItem(k));
+    location.reload();
+  };
+
+  console.log('sadape.bank готов. Админ: admin / qwerty');
+
+})();
+</script>
+</body>
+</html>
